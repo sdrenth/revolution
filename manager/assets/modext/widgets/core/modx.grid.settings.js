@@ -498,6 +498,7 @@ MODx.combo.xType = function(config) {
                 ,[_('context'),'modx-combo-context']
                 ,[_('namespace'),'modx-combo-namespace']
                 ,[_('template'),'modx-combo-template']
+                ,[_('template_list'),'modx-combo-template-list']
                 ,[_('user'),'modx-combo-user']
                 ,[_('usergroup'),'modx-combo-usergroup']
                 ,[_('language'),'modx-combo-language']

@@ -51,6 +51,7 @@ class modTemplateGetListProcessor extends modElementGetListProcessor {
         $objectArray = $object->toArray();
         $objectArray['category_name']= $object->get('category_name');
         unset($objectArray['content']);
+
         return $objectArray;
     }
 }

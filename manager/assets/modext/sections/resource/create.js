@@ -7,6 +7,10 @@
  * @xtype modx-page-resource-create
  */
 MODx.page.CreateResource = function(config) {
+
+
+
+
     config = config || {};
     Ext.applyIf(config,{
         url: MODx.config.connector_url
@@ -31,6 +35,13 @@ MODx.page.CreateResource = function(config) {
 Ext.extend(MODx.page.CreateResource,MODx.Component,{
     getButtons: function(cfg) {
         var btns = [];
+
+        var getParams = document.URL.split("?");
+        var params    = Ext.urlDecode(getParams[getParams.length - 1]);
+        if (!params.template && params.a === 'resource/create') {
+            return btns;
+        }
+
         if (cfg.canSave == 1) {
             btns.push({
                 process: 'resource/create'

@@ -373,6 +373,32 @@ MODx.combo.Template = function(config) {
 Ext.extend(MODx.combo.Template,MODx.combo.ComboBox);
 Ext.reg('modx-combo-template',MODx.combo.Template);
 
+MODx.combo.TemplateList = function(config) {
+    config = config || {};
+    Ext.applyIf(config,{
+        name: 'template'
+        ,hiddenName: 'template'
+        ,displayField: 'templatename'
+        ,valueField: 'id'
+        ,pageSize: 20
+        ,fields: ['id','templatename','description','category_name', 'properties']
+        ,tpl: new Ext.XTemplate('<tpl for="."><div class="x-combo-list-item"><span style="font-weight: bold">{templatename:htmlEncode}</span>'
+            ,'<tpl if="category_name"> - <span style="font-style:italic">{category_name:htmlEncode}</span></tpl>'
+            ,'<br />{description:htmlEncode()}</div><span style="display:none;">{properties}</span></tpl>')
+        ,url: MODx.config.connector_url
+        ,baseParams: {
+            action: 'element/template/getlist'
+            ,combo: 1
+        }
+        // ,listWidth: 350
+        ,allowBlank: true
+        ,triggerAction: 'all'
+    });
+    MODx.combo.TemplateList.superclass.constructor.call(this,config);
+};
+Ext.extend(MODx.combo.TemplateList,MODx.combo.ComboBox);
+Ext.reg('modx-combo-template-list',MODx.combo.TemplateList);
+
 MODx.combo.Category = function(config) {
     config = config || {};
     Ext.applyIf(config,{

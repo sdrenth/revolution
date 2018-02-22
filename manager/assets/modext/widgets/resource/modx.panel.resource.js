@@ -1,6 +1,16 @@
 MODx.panel.Resource = function(config) {
     config = config || {record:{}};
     config.record = config.record || {};
+
+    var getParams = document.URL.split("?");
+    var params = Ext.urlDecode(getParams[getParams.length - 1]);
+    var fields = this.getFields(config);
+
+    /** When creating a new resource and no template has yet been selected, display template selector. */
+    if (!params.template && params.a === 'resource/create') {
+        fields = this.getTemplateFields(config);
+    }
+
     Ext.applyIf(config,{
         url: MODx.config.connector_url
         ,baseParams: {}
@@ -11,7 +21,7 @@ MODx.panel.Resource = function(config) {
 		,cls: 'container form-with-labels'
         ,defaults: { collapsible: false ,autoHeight: true }
         ,forceLayout: true
-        ,items: this.getFields(config)
+        ,items: fields
         ,fileUpload: true
         ,useLoadingMask: true
         ,listeners: {
@@ -33,7 +43,7 @@ MODx.panel.Resource = function(config) {
 Ext.extend(MODx.panel.Resource,MODx.FormPanel,{
     initialized: false
     ,defaultClassKey: 'modDocument'
-    ,classLexiconKey: 'document'
+    ,classLexiconKey: 'template'
     ,rteElements: 'ta'
     ,rteLoaded: false
     ,warnUnsavedChanges: false
@@ -286,6 +296,183 @@ Ext.extend(MODx.panel.Resource,MODx.FormPanel,{
             var fld = Ext.getCmp('ta');
             if (fld) { MODx.onSaveEditor(fld); }
         }
+    }
+
+    ,getTemplateFields: function (config) {
+        var it     = [],
+            its    = [],
+            fields = [];
+
+        fields = [{
+            layout:'column'
+            ,border: false
+            ,anchor: '100%'
+            ,id: 'modx-resource-main-columns'
+            ,defaults: {
+                labelSeparator: ''
+                ,labelAlign: 'top'
+                ,border: false
+                ,msgTarget: 'under'
+            }
+            ,items:[{
+                columnWidth: .33
+                ,layout: 'form'
+                ,id: 'modx-resource-template-list-form'
+                ,defaults: { msgTarget: 'under' }
+                ,items: [{
+                    xtype: 'modx-combo-template-list'
+                    ,fieldLabel: _('resource_template')
+                    ,description: '<b>[[*template]]</b><br />'+_('resource_template_help')
+                    ,name: 'template_list'
+                    ,id: 'modx-combo-template-list'
+                    ,anchor: '100%'
+                    ,editable: true
+                    ,typeAhead: true
+                    ,typeAheadDelay: 300
+                    ,forceSelection: true
+                    ,baseParams: {
+                        action: 'element/template/getList'
+                        ,combo: '1'
+                        ,limit: 0
+                    }
+                    ,listeners: {
+                        //'loaded' : {
+                        //    fn : function(tf) {
+                        //        var index  = tf.getStore().findExact('id', tf.getValue()),
+                        //            record = tf.getStore().getAt(index);
+                        //
+                        //        console.log(index);
+                        //        console.log(record);
+                        //    },
+                        //    scope : this
+                        //},
+                        'change': {
+                            fn: function (tf, nv, ov) {
+                                var index  = tf.getStore().findExact('id', nv),
+                                    record = tf.getStore().getAt(index),
+                                    output = "Unfortunately, there's no preview available for this template";
+
+                                if (record) {
+                                    if (
+                                        record.json.properties &&
+                                        record.json.properties.preview_image &&
+                                        record.json.properties.preview_image.value
+                                    ) {
+                                        output = '<img src="' + record.json.properties.preview_image.value + '" style="max-width:100%;height:auto;"/>';
+                                    }
+                                }
+
+                                Ext.get('template-preview').update(output);
+                            },
+                            scope: this
+                        }
+                    }
+                }]
+            },{
+                columnWidth: .67
+                ,layout: 'form'
+                ,labelWidth: 0
+                ,border: false
+                ,id: 'modx-resource-template-preview'
+                ,style: 'margin-right: 0'
+                ,defaults: { msgTarget: 'under' }
+                ,items: [{
+                    xtype: "panel",
+                    html: "<div id='template-preview' style='margin: 40px;max-height:300px;overflow:scroll;'></div>"
+                }]
+                ,buttons: [{
+                    text: "Choose",
+                    id: "select-template",
+                    style: { marginRight: '10px' },
+                    handler:  function(btn){
+                        var href = location.href,
+                            template = this.getForm().findField("template").getValue();
+
+                        /* Prevent losing changes confirm window. */
+                        this.warnUnsavedChanges = false;
+
+                        location.href = href + '&template=' + '' + template;
+                    },
+                    scope: this
+                }]
+            }]
+        },{
+            html: MODx.onDocFormRender, border: false
+        },{
+            xtype: 'hidden'
+            ,fieldLabel: _('id')
+            ,hideLabel: true
+            ,description: '<b>[[*id]]</b><br />'
+            ,name: 'id'
+            ,id: 'modx-resource-id'
+            ,anchor: '100%'
+            ,value: config.resource || config.record.id
+            ,submitValue: true
+        },{
+            xtype: 'hidden'
+            ,name: 'type'
+            ,value: 'document'
+        },{
+            xtype: 'hidden'
+            ,name: 'context_key'
+            ,id: 'modx-resource-context-key'
+            ,value: config.record.context_key || 'web'
+        },{
+            xtype: 'hidden'
+            ,name: 'content'
+            ,id: 'hiddenContent'
+            ,value: (config.record.content || config.record.ta) || ''
+        },{
+            xtype: 'hidden'
+            ,name: 'create-resource-token'
+            ,id: 'modx-create-resource-token'
+            ,value: config.record.create_resource_token || ''
+        },{
+            xtype: 'hidden'
+            ,name: 'reloaded'
+            ,value: !Ext.isEmpty(MODx.request.reload) ? 1 : 0
+        },{
+            xtype: 'hidden'
+            ,name: 'parent'
+            ,value: config.record.parent || 0
+            ,id: 'modx-resource-parent-hidden'
+        },{
+            xtype: 'hidden'
+            ,name: 'parent-original'
+            ,value: config.record.parent || 0
+            ,id: 'modx-resource-parent-old-hidden'
+        }];
+
+
+        it.push({
+            title: _(this.classLexiconKey)
+            ,id: 'modx-resource-settings'
+            ,cls: 'modx-resource-tab'
+            ,layout: 'form'
+            ,labelAlign: 'top'
+            ,labelSeparator: ''
+            ,bodyCssClass: 'tab-panel-wrapper main-wrapper'
+            ,autoHeight: true
+            ,defaults: {
+        border: false
+        ,msgTarget: 'under'
+        ,width: 400
+    }
+            ,items: fields
+        });
+
+        its.push(this.getPageHeader(config),{
+            id:'modx-resource-tabs'
+            ,xtype: 'modx-tabs'
+            ,forceLayout: true
+            ,deferredRender: false
+            ,collapsible: true
+            ,animCollapse: false
+            ,itemId: 'tabs'
+            ,items: it
+        });
+
+        return its;
     }
 
     ,getFields: function(config) {
